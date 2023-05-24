@@ -28,7 +28,7 @@ def first_col_full_rank(A, n):
 """
 
 def gaussian(A, s, n, k, l):
-    M = np.concatenate((H,s), axis = 1)
+    M = np.concatenate((A,s), axis = 1)
     M_rref = sympy.Matrix(M).rref(iszerofunc=lambda x: x % 2==0)
     R = np.array(M_rref[0].tolist()).astype(np.int64)
 
@@ -81,7 +81,7 @@ s = np.array([0, 1, 1, 1, 0], dtype = np.int64)[ :, None]
 
 #iterate with P
 while True:
-    flag = 0
+    flag = False
     rng = np.random.default_rng()
     I = np.eye(n, dtype = np.int64)
     Permute = rng.permutation(I)
@@ -182,10 +182,10 @@ while True:
         e1 = (np.matmul(H1, e2) + s1)%2
         if wt(e1) <= W - p:
             ans = np.matmul(Permute, np.concatenate((e1, e2)))
-            flag = 1
+            flag = True
             break
 
-    if flag == 1:
+    if flag == True:
         break
 
 for i in ans:
