@@ -10,27 +10,18 @@ def wt(x):
         n += i[0]
     return n
 
-#check whether first k column is linearly independet or not
-"""
-def first_col_full_rank(A, n):
-    M = A[:,:n]
-    _, inds = sympy.Matrix(M).rref(iszerofunc=lambda x: x % 2==0)
-
-    test = []
-    for i in range(n):
-        test.append(i)
-    
-    eval = []
-    for i in test:
-        eval.append(i)
-
-    return eval == test
-"""
+def mod2(x):
+    numer, denom = x.as_numer_denom()
+    if numer % 2 == 0:
+        return 0
+    else:
+        return 1
 
 def gaussian(A, s, n, k, l):
     M = np.concatenate((A,s), axis = 1)
     M_rref = sympy.Matrix(M).rref(iszerofunc=lambda x: x % 2==0)
-    R = np.array(M_rref[0].tolist()).astype(np.int64)
+    M_rref = M_rref[0].applyfunc(lambda x: mod2(x))
+    R = np.array(M_rref.tolist())
 
     Test = R[0:n-k-l , 0:n-k-l]
     H1 = R[0:n-k-l, n-k-l:n]
@@ -38,6 +29,11 @@ def gaussian(A, s, n, k, l):
     s1 = R[0:n-k-l, n:n+1]
     s2 = R[n-k-l:n-k, n:n+1]
     return Test, H1, H2, s1, s2
+
+"""
+reference: 
+https://stackoverflow.com/questions/31190182/sympy-solving-matrices-in-a-finite-field by Chris Chudzicki
+"""
 
 def kbits(n, k):
     limit=1<<n
@@ -62,22 +58,56 @@ def proj(v, l):
     return w
 
 
-#initialize 
-ans = []
-n = 10
-k = 5
-W = 4
+#### Initialize (n, w, k, H, s) with input.txt
+f = open('input.txt', 'r')
+f.readline()
+n = int(f.readline())
+f.readline()
+f.readline()
+f.readline()
+W = int(f.readline())
+f.readline()
 
-p = 4   #random choice
-l = 3   #random choice
+Data_H = []
+while True:
+    x = f.readline()
+    if(x[0] == '#'):
+        break
+    Data_H.append(x)
+
+k = len(Data_H)
+H = []
+
+for D in Data_H:
+    V = []
+    for i in range(len(D)-1):
+        V.append(int(D[i]))
+    H.append(V)
+H = np.array(H)
+H = np.transpose(H)
+I = np.eye(n-k, dtype = np.int64)
+H = np.concatenate((I, H), axis = 1)
+
+
+Data_s = f.readline()
+s = []
+for i in range(len(Data_s)):
+    s.append(int(Data_s[i]))
+s = np.array(s)
+s = s[:, None]
+
+f.close()
+#### Initialize Done
+
+# main function
+ans = []
+
+p = 8   #choose between 0 <= p <= W, (should it be multiple of 4 ? )
+l = 20   #choose between 0 <= l <= n - k, should be k == l (mod 2)
+
 p1 = int(p/2)
 p2 = int(p1/2) 
 l1 = int(np.log2(math.comb(p, p1)))
-
-I = np.eye(n-k, dtype = np.int64)
-H = np.transpose(np.array([[1, 1, 0, 1, 1], [1, 1, 1, 1, 0], [0, 1, 0, 0, 1], [0, 1, 0, 0, 1], [1, 0, 1, 1, 1]], dtype = np.int64))
-H = np.concatenate((I, H), axis = 1)
-s = np.array([0, 1, 1, 1, 0], dtype = np.int64)[ :, None]
 
 #iterate with P
 while True:
@@ -86,7 +116,6 @@ while True:
     I = np.eye(n, dtype = np.int64)
     Permute = rng.permutation(I)
     H_bar = np.matmul(H, Permute)
-    P_inv = np.linalg.inv(Permute).astype(np.int64)
 
     #we have to check linearly independency of H_bar and skip if not.
     #we have to do this in modulo 2
