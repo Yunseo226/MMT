@@ -104,6 +104,10 @@ public:
         return A;       
     }
 
+    bool operator==(const Matmod2& ref){
+        return(this->row == ref.row && this->column == ref.column && this->mat == ref.mat);
+    }
+
     void transpose(){
         int tmp = row;
         row = column;
@@ -125,7 +129,7 @@ public:
         mat = new_mat;
     }
 
-    void concat(Matmod2& ref){
+    void concat_in_row(Matmod2& ref){
         if(this->row != ref.row){
             cout << "error: matrix size not compatible for concatenation" << endl;
             return;
@@ -136,6 +140,19 @@ public:
             for(int j = 0; j < ref.column; j++){
                 this->mat[i].push_back(ref.mat[i][j]);
             }
+        }
+
+    }
+
+    void concat_in_col(Matmod2& ref){
+        if(this->column != ref.column){
+            cout << "error: matrix size not compatible for concatenation" << endl;
+            return;
+        }
+
+        this->row += ref.row;
+        for(int i = 0; i < ref.row; i++){
+            this->mat.push_back(ref.mat[i]);
         }
 
     }
@@ -151,20 +168,25 @@ public:
             }
             cout << endl;
         }
+        cout << endl;
     }
 
 };
 
-Matmod2 shuffle(Matmod2 A, vector<int> perm){
-    auto B = A;
-    B.transpose();
-    auto C = B;
+Matmod2 shuffle_row(Matmod2 A, vector<int> perm){
+    auto C = A;
     for(int i = 0; i < perm.size(); i++){
-        C.mat[perm[i]] = B.mat[i];
+        C.mat[perm[i]] = A.mat[i];
     }
-    C.transpose();
 
     return C;
+}
+
+Matmod2 shuffle_col(Matmod2 A, vector<int> perm){
+    A.transpose();
+    auto B = shuffle_row(A, perm);
+    B.transpose();
+    return B;
 }
 
 //cut row: a~b, column: x~y
@@ -177,4 +199,38 @@ Matmod2 cut(Matmod2 A, int a, int b, int x, int y){
     }
 
     return B;
+}
+
+Matmod2 proj(Matmod2 A, int size){
+    auto B = Matmod2(size, A.column);
+    for(int i = 0; i < B.row; i++){
+        for(int j=0; j < B.column; j++){
+            B.mat[i][j] = A.mat[i][j];
+        }
+    }
+
+    return B;
+}
+
+Matmod2 gen_randvec(int size){
+    vector<int> v(size);
+    srand(time(0));
+    generate(v.begin(), v.end(), rand);
+
+    auto A =  Matmod2(size, 1);
+    for(int i = 0; i < size; i++){
+        A.mat[i][0] = (v[i]%2 == 0);
+    }
+    return A;
+}
+
+int wt(Matmod2 A){
+    int s = 0;
+    for(int i = 0; i < A.row; i++){
+        for(int j = 0; j < A.column; j++){
+            if(A.mat[i][j]) s++;
+        }
+    }
+
+    return s;
 }

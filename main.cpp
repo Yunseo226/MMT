@@ -44,7 +44,7 @@ bool init(){
 
     auto extra = Matmod2(H_str);
     H = Matmod2(n-k);
-    H.concat(extra);
+    H.concat_in_row(extra);
 
     return true;    
 }
@@ -90,8 +90,25 @@ int main()
         return 0;
     }
  
-    int p = 4;   //choose between 0 <= p <= W, (should it be multiple of 4)
-    int l = 6;   //choose between 0 <= l <= n - k, should be k == l (mod 2)
+    int l;   //choose between 0 <= l <= n - k, (it must be k == l (mod 2))
+    int p;   //choose between 0 <= p <=  min(w, k + l), (it must be multiple of 4)
+
+    cout << "choose l between 0 and " << n-k << endl;
+    cin >> l;
+    cout << "choose p between 0 and " << (w > (k + l) ? k+l : w) << endl;
+    cin >> p;
+
+    p >> 2;
+    p << 2;
+    if(p == 0) p = 4;
+    if(w == p) p-=4;
+
+    l += (k-l)%2;
+    if(l >= n-k) l-=2;
+    if(l < 0) l+=2;
+
+    auto start = chrono::steady_clock::now();
+
 
     int d[31][31];
     for (int i = 0; i < 31; i++) {
@@ -105,26 +122,30 @@ int main()
 
     int p1 = p/2;
     int p2 = p1/2;
-    int l1 = (int)log2(d[p-1][p1-1]);
+    int l1 = (int)log2(d[p][p1]);
+    Matmod2 ans;
 
     vector<int> perm;
     for(int i = 0; i < n; i++){
         perm.push_back(i);
     }
 
+    int iter = 0;
+
     do {
-        auto H_bar = shuffle(H, perm);
+        auto H_bar = shuffle_col(H, perm);
 
         if(!gauss(H_bar, s, n - k - l)){
             continue;
         }
 
         auto H1 = cut(H_bar, 0, n-k-l-1, n-k-l, n-1);
-        auto H2 = cut(H_bar, n-k-l, n-1, n-k-l, n-1);
+        auto H2 = cut(H_bar, n-k-l, n-k-1, n-k-l, n-1);
         auto s1 = cut(s, 0, n-k-l-1, 0, 0);
-        auto s2 = cut(s, n-k-l, n-1, 0, 0);
+        auto s2 = cut(s, n-k-l, n-k-1, 0, 0);
 
-        vector<pair<Matmod2, Matmod2>> L1, L2, L3, L4, LL1, LL2, L;
+        vector<Matmod2> L;
+        vector<pair<Matmod2, Matmod2>> L1, L2, L3, L4, LL1, LL2;
         vector<Matmod2> y1_set, y2_set;
 
         vector<int> ones((k+l)/2 - p2);
@@ -141,11 +162,11 @@ int main()
             y1_set.push_back(Matmod2(y1));
             y2_set.push_back(Matmod2(y2));
         }
-        while(next_permutation(y.begin(), y.end()));
+        while(next_permutation(ones.begin(), ones.end()));
 
         for(auto y1 : y1_set){
-            L1.push_back(make_pair(y1, H1*y1));
-            L3.push_back(make_pair(y1, H1*y1));
+            L1.push_back(make_pair(y1, H2*y1));
+            L3.push_back(make_pair(y1, H2*y1));
         }
 
         for(auto y2 : y2_set){
@@ -153,7 +174,59 @@ int main()
             L4.push_back(make_pair(y2, H2*y2 + s2));
         }
 
+        auto t = gen_randvec(l1);
+
+        for(auto v: L1){
+            for(auto w : L2){
+                if(proj(v.second, l1) == proj(w.second, l1) + t){
+                    LL1.push_back(make_pair(v.first + w.first, v.second + w.second));
+                }
+            }
+        }
+
+        for(auto v: L3){
+            for(auto w : L4){
+                if(proj(v.second, l1) == proj(w.second, l1) + t){
+                    LL2.push_back(make_pair(v.first + w.first, v.second + w.second));
+                }
+            }
+        }
+
+        for(auto x1 : LL1){
+            for(auto x2 : LL2){
+                if(x1.second == x2.second){
+                    L.push_back(x1.first + x2.first);
+                }
+            }
+        }
+
+        bool solved = false;
+        for(auto e2 : L){
+            auto e1 = H1*e2 + s1;
+            if(wt(e1) <= w-p){
+                e1.concat_in_col(e2);
+                ans = shuffle_row(e1, perm);
+                solved = true;
+                break;
+            }
+        }
+
+        if(solved) break;
+        iter++;
+
     } while(next_permutation(perm.begin(), perm.end()));
  
+
+    cout << "answer: ";
+    for(int i = 0; i < ans.row; i++){
+        cout << ans.mat[i][0];
+    }
+    cout << endl;
+
+    auto end = chrono::steady_clock::now();
+    auto diff = end - start;
+    cout << "number of iteration: " << iter << endl;
+    cout << "execution time: " << chrono::duration <double, milli> (diff).count() << " ms" << endl;
+
     return 0;
 }
