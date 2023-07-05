@@ -1,10 +1,20 @@
 #include "Matmod2.h"
 
+using namespace std;
+
 int n;
 int k;
 int w;
 Matmod2 H;
 Matmod2 s;
+
+void print(const vector<int> v){
+    for(auto i : v){
+        cout << i << " ";
+    }
+    cout << endl;
+    cout << endl;
+}
 
 bool init(){
     string filename("input.txt");
@@ -58,11 +68,12 @@ bool gauss(Matmod2& A, Matmod2& b, int p){
 
     bool is_zero = true;
     for(int t = 0; t < p; t++){
-        for(int i = 0; i < n - k; i++){
+        for(int i = t; i < n - k; i++){
             if(A.mat[i][t]){
                 swap(A.mat[i], A.mat[t]);
                 swap(b.mat[i], b.mat[t]);
-                for(int j = i + 1; j < n - k; j++){
+                for(int j = 0; j < n - k; j++){
+                    if(j == t) continue;
                     if(A.mat[j][t]){
                         for(int x = 0; x < n; x++){
                             A.mat[j][x] = (A.mat[j][x] != A.mat[t][x]);
@@ -93,10 +104,8 @@ int main()
     int l;   //choose between 0 <= l <= n - k, (it must be k == l (mod 2))
     int p;   //choose between 0 <= p <=  min(w, k + l), (it must be multiple of 4)
 
-    cout << "choose l between 0 and " << n-k << endl;
-    cin >> l;
-    cout << "choose p between 0 and " << (w > (k + l) ? k+l : w) << endl;
-    cin >> p;
+    cout << "choose l between 0 and " << n-k << ": ";    cin >> l;
+    cout << "choose p between 0 and " << (w > (k + l) ? k+l : w) << ": ";    cin >> p;
 
     p >> 2;
     p << 2;
@@ -132,17 +141,24 @@ int main()
 
     int iter = 0;
 
-    do {
-        auto H_bar = shuffle_col(H, perm);
+    while(true) {
 
-        if(!gauss(H_bar, s, n - k - l)){
+        unsigned seed = chrono::system_clock::now()
+                        .time_since_epoch()
+                        .count();
+        shuffle (perm.begin(), perm.end(), std::default_random_engine(seed));
+
+        auto H_bar = shuffle_col(H, perm);
+        auto s_bar = s;
+
+        if(!gauss(H_bar, s_bar, n - k - l)){
             continue;
         }
 
         auto H1 = cut(H_bar, 0, n-k-l-1, n-k-l, n-1);
         auto H2 = cut(H_bar, n-k-l, n-k-1, n-k-l, n-1);
-        auto s1 = cut(s, 0, n-k-l-1, 0, 0);
-        auto s2 = cut(s, n-k-l, n-k-1, 0, 0);
+        auto s1 = cut(s_bar, 0, n-k-l-1, 0, 0);
+        auto s2 = cut(s_bar, n-k-l, n-k-1, 0, 0);
 
         vector<Matmod2> L;
         vector<pair<Matmod2, Matmod2>> L1, L2, L3, L4, LL1, LL2;
@@ -205,7 +221,7 @@ int main()
             auto e1 = H1*e2 + s1;
             if(wt(e1) <= w-p){
                 e1.concat_in_col(e2);
-                ans = shuffle_row(e1, perm);
+                ans = shuffle_row_inverse(e1, perm);
                 solved = true;
                 break;
             }
@@ -214,7 +230,7 @@ int main()
         if(solved) break;
         iter++;
 
-    } while(next_permutation(perm.begin(), perm.end()));
+    }
  
 
     cout << "answer: ";

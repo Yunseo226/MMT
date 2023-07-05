@@ -70,7 +70,7 @@ public:
         }        
     }
 
-    Matmod2 operator*(Matmod2& ref){
+    Matmod2 operator*(const Matmod2& ref){
         if(this->column != ref.row){
             cout << "error: matrix size not compatible for multiplication" << endl;
             return *this;
@@ -88,7 +88,7 @@ public:
         return A;
     }
 
-    Matmod2 operator+(Matmod2& ref){
+    Matmod2 operator+(const Matmod2& ref){
          if(this->row != ref.row || this->column != ref.column){
             cout << "error: matrix size not compatible for addition" << endl;
             return *this;
@@ -129,7 +129,7 @@ public:
         mat = new_mat;
     }
 
-    void concat_in_row(Matmod2& ref){
+    void concat_in_row(const Matmod2& ref){
         if(this->row != ref.row){
             cout << "error: matrix size not compatible for concatenation" << endl;
             return;
@@ -144,7 +144,7 @@ public:
 
     }
 
-    void concat_in_col(Matmod2& ref){
+    void concat_in_col(const Matmod2& ref){
         if(this->column != ref.column){
             cout << "error: matrix size not compatible for concatenation" << endl;
             return;
@@ -173,7 +173,7 @@ public:
 
 };
 
-Matmod2 shuffle_row(Matmod2 A, vector<int> perm){
+Matmod2 shuffle_row(const Matmod2 A, const vector<int> perm){
     auto C = A;
     for(int i = 0; i < perm.size(); i++){
         C.mat[perm[i]] = A.mat[i];
@@ -182,15 +182,25 @@ Matmod2 shuffle_row(Matmod2 A, vector<int> perm){
     return C;
 }
 
-Matmod2 shuffle_col(Matmod2 A, vector<int> perm){
-    A.transpose();
-    auto B = shuffle_row(A, perm);
+Matmod2 shuffle_row_inverse(const Matmod2 A, const vector<int> perm){
+    auto C = A;
+    for(int i = 0; i < perm.size(); i++){
+        C.mat[i] = A.mat[perm[i]];
+    }
+
+    return C;
+}
+
+Matmod2 shuffle_col(const Matmod2 A, const vector<int> perm){
+    auto B = A;
     B.transpose();
-    return B;
+    auto C = shuffle_row(B, perm);
+    C.transpose();
+    return C;
 }
 
 //cut row: a~b, column: x~y
-Matmod2 cut(Matmod2 A, int a, int b, int x, int y){
+Matmod2 cut(const Matmod2 A, int a, int b, int x, int y){
     Matmod2 B(b-a+1, y-x+1);
     for(int i = 0; i < B.row; i++){
         for(int j = 0; j < B.column; j++){
@@ -201,7 +211,7 @@ Matmod2 cut(Matmod2 A, int a, int b, int x, int y){
     return B;
 }
 
-Matmod2 proj(Matmod2 A, int size){
+Matmod2 proj(const Matmod2 A, int size){
     auto B = Matmod2(size, A.column);
     for(int i = 0; i < B.row; i++){
         for(int j=0; j < B.column; j++){
